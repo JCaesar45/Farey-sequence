@@ -1,0 +1,874 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farey Sequence Explorer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #00f0ff;
+      --secondary: #ff006e;
+      --accent: #fb5607;
+      --dark: #0a0a0f;
+      --darker: #050508;
+      --light: #e0e0e0;
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--darker);
+      color: var(--light);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    #canvas-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 10;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      padding: 3rem 0;
+      position: relative;
+    }
+
+    .glitch {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      position: relative;
+      display: inline-block;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: titlePulse 4s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+
+      0%,
+      100% {
+        filter: hue-rotate(0deg) brightness(1);
+      }
+
+      50% {
+        filter: hue-rotate(30deg) brightness(1.2);
+      }
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 1rem;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 968px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0.5;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .panel-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--primary), transparent);
+      opacity: 0.3;
+    }
+
+    .control-group {
+      margin-bottom: 2rem;
+    }
+
+    .control-label {
+      display: block;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .slider-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      background: var(--primary);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.8);
+    }
+
+    .value-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 3rem;
+      text-align: center;
+      background: rgba(0, 240, 255, 0.1);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none;
+      border-radius: 12px;
+      color: var(--dark);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px rgba(0, 240, 255, 0.3);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-2px);
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.25rem;
+    }
+
+    .viz-container {
+      position: relative;
+      height: 400px;
+      background: var(--darker);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+    }
+
+    #farey-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .sequence-display {
+      margin-top: 1.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--darker);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--glass-border);
+    }
+
+    .sequence-display::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .sequence-display::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+
+    .sequence-display::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 4px;
+    }
+
+    .fraction-tag {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      padding: 0.4rem 0.8rem;
+      margin: 0.25rem;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 6px;
+      color: var(--light);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .fraction-tag:hover {
+      background: rgba(0, 240, 255, 0.2);
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+    }
+
+    .info-section {
+      margin-top: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .info-card {
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .info-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .info-card:hover::after {
+      opacity: 1;
+    }
+
+    .info-card h3 {
+      font-size: 1.1rem;
+      color: var(--primary);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .info-card p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .formula {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(0, 240, 255, 0.1);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--darker);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(0, 240, 255, 0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .tooltip {
+      position: fixed;
+      background: rgba(10, 10, 15, 0.95);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--light);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.2s ease;
+      z-index: 1000;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .medal-visual {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      opacity: 0.1;
+    }
+
+    .highlight {
+      animation: highlightPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes highlightPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 5px var(--primary);
+      }
+
+      50% {
+        box-shadow: 0 0 20px var(--primary), 0 0 40px var(--secondary);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas-bg"></canvas>
+
+  <div class="container">
+    <header>
+      <h1 class="glitch">Farey Sequence</h1>
+      <p class="subtitle">The Mathematics of Reduced Fractions</p>
+    </header>
+
+    <div class="main-grid">
+      <div class="controls-column">
+        <div class="panel">
+          <div class="panel-title">Configuration</div>
+
+          <div class="control-group">
+            <label class="control-label">Sequence Order (n)</label>
+            <div class="slider-container">
+              <input type="range" id="order-slider" min="1" max="50" value="5" step="1">
+              <div class="value-display" id="order-value">5</div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Visualization Mode</label>
+            <button class="btn" id="generate-btn">Generate Sequence</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-value" id="count-stat">11</span>
+              <div class="stat-label">Terms</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="medial-stat">1/2</span>
+              <div class="stat-label">Mediant</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="length-stat">1.0</span>
+              <div class="stat-label">Span</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value" id="max-den">5</span>
+              <div class="stat-label">Max Den</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 1.5rem;">
+          <div class="panel-title">Sequence Output</div>
+          <div class="sequence-display" id="sequence-output">
+            <span class="fraction-tag">0/1</span>
+            <span class="fraction-tag">1/5</span>
+            <span class="fraction-tag">1/4</span>
+            <span class="fraction-tag">1/3</span>
+            <span class="fraction-tag">2/5</span>
+            <span class="fraction-tag">1/2</span>
+            <span class="fraction-tag">3/5</span>
+            <span class="fraction-tag">2/3</span>
+            <span class="fraction-tag">3/4</span>
+            <span class="fraction-tag">4/5</span>
+            <span class="fraction-tag">1/1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="viz-column">
+        <div class="panel">
+          <div class="panel-title">Visual Representation</div>
+          <div class="viz-container">
+            <canvas id="farey-canvas"></canvas>
+            <div class="loading-overlay" id="loading">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="info-card">
+            <h3>📐 Definition</h3>
+            <p>The Farey sequence <span class="formula">Fₙ</span> of order <span class="formula">n</span> is the sequence of completely reduced fractions between 0 and 1 with denominators ≤ n, arranged in increasing order.</p>
+          </div>
+
+          <div class="info-card">
+            <h3>🔢 Properties</h3>
+            <p>Each sequence starts with <span class="formula">0/1</span> and ends with <span class="formula">1/1</span>. The number of terms is <span class="formula">1 + Σφ(k)</span> for k from 1 to n, where φ is Euler's totient function.</p>
+          </div>
+
+          <div class="info-card">
+            <h3>⚡ Mediant Property</h3>
+            <p>If <span class="formula">a/b</span> and <span class="formula">c/d</span> are neighbors in <span class="formula">Fₙ</span>, then <span class="formula">bc - ad = 1</span>. Their mediant <span class="formula">(a+c)/(b+d)</span> first appears in <span class="formula">F_{b+d}</span>.</p>
+          </div>
+
+          <div class="info-card">
+            <h3>🎯 Applications</h3>
+            <p>Farey sequences appear in number theory, rational approximation, the Riemann hypothesis, computer graphics (line drawing), and musical tuning systems.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('canvas-bg');
+      const ctx = canvas.getContext('2d');
+      let width, height;
+      let particles = [];
+      let mouse = {
+        x: 0,
+        y: 0
+      };
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+      class Particle {
+        constructor() {
+          this.reset();
+        }
+        reset() {
+          this.x = Math.random() * width;
+          this.y = Math.random() * height;
+          this.vx = (Math.random() - 0.5) * 0.5;
+          this.vy = (Math.random() - 0.5) * 0.5;
+          this.radius = Math.random() * 2;
+          this.alpha = Math.random() * 0.5;
+        }
+        update() {
+          this.x += this.vx;
+          this.y += this.vy;
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            const force = (100 - dist) / 100;
+            this.vx -= (dx / dist) * force * 0.02;
+            this.vy -= (dy / dist) * force * 0.02;
+          }
+          if (this.x < 0 || this.x > width) this.vx *= -1;
+          if (this.y < 0 || this.y > height) this.vy *= -1;
+          this.alpha += (Math.random() - 0.5) * 0.02;
+          this.alpha = Math.max(0.1, Math.min(0.6, this.alpha));
+        }
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0, 240, 255, ${this.alpha})`;
+          ctx.fill();
+        }
+      }
+      for (let i = 0; i < 100; i++) {
+        particles.push(new Particle());
+      }
+      window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+        particles.forEach(p => {
+          p.update();
+          p.draw();
+        });
+        particles.forEach((p1, i) => {
+          particles.slice(i + 1).forEach(p2 => {
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 150) {
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `rgba(0, 240, 255, ${0.1 * (1 - dist / 150)})`;
+              ctx.stroke();
+            }
+          });
+        });
+        requestAnimationFrame(animate);
+      }
+      animate();
+    })();
+
+    function gcd(a, b) {
+      a = Math.abs(a);
+      b = Math.abs(b);
+      while (b !== 0) {
+        let temp = b;
+        b = a % b;
+        a = temp;
+      }
+      return a;
+    }
+
+    function generateFarey(n) {
+      const sequence = [];
+      for (let b = 1; b <= n; b++) {
+        for (let a = 0; a <= b; a++) {
+          if (gcd(a, b) === 1) {
+            sequence.push({
+              num: a,
+              den: b,
+              val: a / b
+            });
+          }
+        }
+      }
+      sequence.sort((a, b) => a.val - b.val);
+      return sequence;
+    }
+
+    function fareyLength(n) {
+      let count = 1;
+      for (let i = 1; i <= n; i++) {
+        count += eulerTotient(i);
+      }
+      return count;
+    }
+
+    function eulerTotient(n) {
+      let result = n;
+      for (let p = 2; p * p <= n; p++) {
+        if (n % p === 0) {
+          while (n % p === 0) n /= p;
+          result -= result / p;
+        }
+      }
+      if (n > 1) result -= result / n;
+      return result;
+    }
+    const slider = document.getElementById('order-slider');
+    const orderValue = document.getElementById('order-value');
+    const generateBtn = document.getElementById('generate-btn');
+    const sequenceOutput = document.getElementById('sequence-output');
+    const countStat = document.getElementById('count-stat');
+    const medialStat = document.getElementById('medial-stat');
+    const lengthStat = document.getElementById('length-stat');
+    const maxDen = document.getElementById('max-den');
+    const fareyCanvas = document.getElementById('farey-canvas');
+    const fctx = fareyCanvas.getContext('2d');
+    const loading = document.getElementById('loading');
+    const tooltip = document.getElementById('tooltip');
+
+    function resizeCanvas() {
+      const container = fareyCanvas.parentElement;
+      fareyCanvas.width = container.clientWidth;
+      fareyCanvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    let currentSequence = [];
+    let animationId = null;
+
+    function drawVisualization(sequence) {
+      const w = fareyCanvas.width;
+      const h = fareyCanvas.height;
+      fctx.clearRect(0, 0, w, h);
+      if (sequence.length === 0) return;
+      const padding = 60;
+      const graphW = w - 2 * padding;
+      const graphH = h - 2 * padding;
+      fctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      fctx.lineWidth = 1;
+      fctx.beginPath();
+      fctx.moveTo(padding, padding);
+      fctx.lineTo(padding, h - padding);
+      fctx.lineTo(w - padding, h - padding);
+      fctx.stroke();
+      const maxDen = Math.max(...sequence.map(f => f.den));
+      const pointRadius = Math.max(3, Math.min(8, graphW / sequence.length / 2));
+      sequence.forEach((frac, i) => {
+        const x = padding + frac.val * graphW;
+        const y = h - padding - (frac.den / maxDen) * graphH * 0.8;
+        const gradient = fctx.createRadialGradient(x, y, 0, x, y, pointRadius * 2);
+        gradient.addColorStop(0, 'rgba(0, 240, 255, 1)');
+        gradient.addColorStop(0.5, 'rgba(255, 0, 110, 0.5)');
+        gradient.addColorStop(1, 'rgba(255, 0, 110, 0)');
+        fctx.beginPath();
+        fctx.arc(x, y, pointRadius, 0, Math.PI * 2);
+        fctx.fillStyle = gradient;
+        fctx.fill();
+        fctx.beginPath();
+        fctx.arc(x, y, pointRadius, 0, Math.PI * 2);
+        fctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        fctx.lineWidth = 1;
+        fctx.stroke();
+        if (sequence.length <= 20 || i % Math.ceil(sequence.length / 20) === 0) {
+          fctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+          fctx.font = '10px JetBrains Mono';
+          fctx.textAlign = 'center';
+          fctx.fillText(`${frac.num}/${frac.den}`, x, h - padding + 15);
+        }
+      });
+      fctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+      fctx.lineWidth = 2;
+      fctx.beginPath();
+      sequence.forEach((frac, i) => {
+        const x = padding + frac.val * graphW;
+        const y = h - padding - (frac.den / maxDen) * graphH * 0.8;
+        if (i === 0) fctx.moveTo(x, y);
+        else fctx.lineTo(x, y);
+      });
+      fctx.stroke();
+    }
+
+    function updateDisplay() {
+      const n = parseInt(slider.value);
+      orderValue.textContent = n;
+      loading.classList.add('active');
+      setTimeout(() => {
+        currentSequence = generateFarey(n);
+        sequenceOutput.innerHTML = currentSequence.map(f =>
+          `<span class="fraction-tag" data-num="${f.num}" data-den="${f.den}" data-val="${f.val.toFixed(4)}">${f.num}/${f.den}</span>`
+        ).join('');
+        countStat.textContent = currentSequence.length;
+        const mid = Math.floor(currentSequence.length / 2);
+        medialStat.textContent = `${currentSequence[mid].num}/${currentSequence[mid].den}`;
+        lengthStat.textContent = '1.0';
+        maxDen.textContent = n;
+        drawVisualization(currentSequence);
+        loading.classList.remove('active');
+      }, 100);
+    }
+    slider.addEventListener('input', () => {
+      orderValue.textContent = slider.value;
+    });
+    slider.addEventListener('change', updateDisplay);
+    generateBtn.addEventListener('click', updateDisplay);
+    fareyCanvas.addEventListener('mousemove', (e) => {
+      const rect = fareyCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const padding = 60;
+      const graphW = fareyCanvas.width - 2 * padding;
+      let found = null;
+      let minDist = Infinity;
+      currentSequence.forEach(frac => {
+        const px = padding + frac.val * graphW;
+        const py = fareyCanvas.height - padding - (frac.den / Math.max(...currentSequence.map(f => f.den))) * (fareyCanvas.height - 2 * padding) * 0.8;
+        const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+        if (dist < 20 && dist < minDist) {
+          minDist = dist;
+          found = frac;
+        }
+      });
+      if (found) {
+        tooltip.innerHTML = `
+                    <strong>${found.num}/${found.den}</strong><br>
+                    Value: ${found.val.toFixed(6)}<br>
+                    Decimal: ${(found.num / found.den).toFixed(4)}
+                `;
+        tooltip.style.left = e.clientX + 10 + 'px';
+        tooltip.style.top = e.clientY - 10 + 'px';
+        tooltip.classList.add('visible');
+        fareyCanvas.style.cursor = 'pointer';
+      } else {
+        tooltip.classList.remove('visible');
+        fareyCanvas.style.cursor = 'default';
+      }
+    });
+    fareyCanvas.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('visible');
+    });
+    sequenceOutput.addEventListener('mouseover', (e) => {
+      if (e.target.classList.contains('fraction-tag')) {
+        const val = parseFloat(e.target.dataset.val);
+        const num = e.target.dataset.num;
+        const den = e.target.dataset.den;
+        tooltip.innerHTML = `
+                    <strong>${num}/${den}</strong><br>
+                    Position: ${val}
+                `;
+        const rect = e.target.getBoundingClientRect();
+        tooltip.style.left = rect.left + rect.width / 2 + 'px';
+        tooltip.style.top = rect.top - 40 + 'px';
+        tooltip.classList.add('visible');
+      }
+    });
+    sequenceOutput.addEventListener('mouseout', () => {
+      tooltip.classList.remove('visible');
+    });
+    updateDisplay();
+  </script>
+</body>
+
+</html>
